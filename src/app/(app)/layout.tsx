@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { signOut } from "@/app/login/actions";
 import { requireOwner } from "@/lib/owner";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +6,8 @@ export const dynamic = "force-dynamic";
 const LINKS = [
   ["/", "Overview"],
   ["/jobs", "Jobs"],
+  ["/queue", "Queue"],
+  ["/cvs", "CVs"],
   ["/profile", "Profile"],
   ["/usage", "Usage"],
   ["/settings", "Settings"],
@@ -30,11 +31,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 {label}
               </Link>
             ))}
-            <form action={signOut}>
-              <button type="submit" className="rounded-full px-3 py-1.5 text-ink/70 hover:bg-paper">
-                Sign out
-              </button>
-            </form>
           </nav>
         </div>
       </header>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ApplicationPanel } from "@/app/(app)/jobs/[id]/application-panel";
 import { eligibilityLabel, fitBand, formatSalary, remoteLabel, sourceLabel, statusLabel } from "@/lib/format";
 import { DEFAULT_FIT_BANDS } from "@/lib/profile-defaults";
 import { requireOwner } from "@/lib/owner";
@@ -8,8 +9,15 @@ export const dynamic = "force-dynamic";
 
 type Reason = { rule?: string; points?: number; quote?: string; signal?: string; direction?: string };
 
-export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function JobDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; notice?: string }>;
+}) {
   const { id } = await params;
+  const query = await searchParams;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) notFound();
   const { supabase } = await requireOwner();
   const { data: job } = await supabase.from("jobs").select("*").eq("id", id).maybeSingle();
@@ -35,6 +43,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             Jobs
           </Link>
         </p>
+        {query.error ? <p className="mt-4 text-sm text-clay">{query.error}</p> : null}
+        {query.notice ? <p className="mt-4 text-sm text-mossdeep">{query.notice}</p> : null}
         <h1 className="mt-2 font-serif text-4xl">{job.title}</h1>
         <p className="mt-2 text-lg">{job.company_name || "Company not named"}</p>
         <p className="mt-3 text-sm">
@@ -72,6 +82,14 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         <div className="mt-3 whitespace-pre-wrap rounded-2xl border border-line bg-card p-4 text-sm leading-relaxed">
           {job.description_text || "The source did not include a description."}
         </div>
+        <ApplicationPanel
+          jobId={job.id}
+          title={job.title}
+          description={job.description_text ?? ""}
+          company={job.company_name ?? ""}
+          status={job.status}
+          duplicateOf={job.duplicate_of}
+        />
       </article>
       <aside className="space-y-4">
         <section className="rounded-2xl border border-line bg-card p-4 shadow-card">
@@ -98,7 +116,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             ))}
           </ul>
           <p className="mt-4 text-xs leading-relaxed text-ink/55">
-            No application letter is generated in this milestone.
+            Fit stays on the rules score. A standard letter does not rescore the job and does not call a model.
           </p>
         </section>
         <section className="rounded-2xl border border-privatedeep/20 bg-private p-4" aria-label="Private OE suitability">

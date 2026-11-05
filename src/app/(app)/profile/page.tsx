@@ -21,8 +21,8 @@ export default async function ProfilePage({
     <main className="max-w-3xl">
       <h1 className="font-serif text-4xl">Profile</h1>
       <p className="mt-2 text-sm leading-relaxed text-ink/70">
-        These facts are the only experience the assistant may use later. It does not add facts by itself. Years are blank until you set them, so a required-years rule is not applied yet.
-        Writing rules are stored now and are not applied to letters until a later milestone.
+        These facts are the only experience a standard letter may use. The assistant does not add facts by itself. Years are blank until you set them, so a required-years rule is not applied yet.
+        Writing rules are applied when a letter is checked. That check does not call a model.
       </p>
       {params.error ? <p className="mt-4 text-sm text-clay">{params.error}</p> : null}
       {params.saved ? <p className="mt-4 text-sm text-mossdeep">Saved.</p> : null}

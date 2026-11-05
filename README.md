@@ -32,10 +32,10 @@ npm run dev
 
 `npm run prove` fetches both live feeds and scores them. It does not need Supabase. It exits non-zero if a fetch fails or a feed parses to zero listings.
 
-Sign in with `OWNER_EMAIL`. The first successful password creates that auth user and seeds the profile and writing rules. No other email can sign in.
+The dashboard opens without a sign-in. Server writes use the service role for the single owner in `OWNER_EMAIL`.
 
 ## Discovery
 
-`POST /api/cron/discover` with `Authorization: Bearer $CRON_SECRET`. The same handler accepts GET so a host cron that cannot POST still works. The overview has a Run discovery button for the signed-in owner.
+`POST /api/cron/discover` with `Authorization: Bearer $CRON_SECRET`. The same handler accepts GET so a host cron that cannot POST still works. The overview has a Run discovery button.
 
 Today’s usage row is in Europe/London. With the model off, spend is £0.00.
