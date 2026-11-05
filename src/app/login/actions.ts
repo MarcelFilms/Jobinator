@@ -30,8 +30,8 @@ export async function signIn(formData: FormData) {
 
   const admin = createAdminClient();
   const listed = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const exists = (listed.data?.users ?? []).some((user) => user.email?.toLowerCase() === email);
-  if (!exists) {
+  const existing = (listed.data?.users ?? []).find((user) => user.email?.toLowerCase() === email);
+  if (!existing) {
     const created = await admin.auth.admin.createUser({
       email,
       password,
@@ -40,6 +40,17 @@ export async function signIn(formData: FormData) {
     if (created.error || !created.data.user) fail(created.error?.message ?? "The owner account could not be created.");
     const second = await supabase.auth.signInWithPassword({ email, password });
     if (second.error || !second.data.user) fail(second.error?.message ?? "The owner was created, but sign-in failed.");
+    await ensureOwner(second.data.user.id, email);
+    redirect("/");
+  }
+
+  // The profile seed can create the allowlisted user before they choose a password.
+  // The first password they submit becomes theirs if they have never signed in.
+  if (!existing.last_sign_in_at) {
+    const updated = await admin.auth.admin.updateUserById(existing.id, { password, email_confirm: true });
+    if (updated.error) fail(updated.error.message);
+    const second = await supabase.auth.signInWithPassword({ email, password });
+    if (second.error || !second.data.user) fail(second.error?.message ?? "The owner password was saved, but sign-in failed.");
     await ensureOwner(second.data.user.id, email);
     redirect("/");
   }
