@@ -1,5 +1,5 @@
 import "server-only";
-import { redirect } from "next/navigation";
+import { cache } from "react";
 import { ownerEmail } from "@/lib/env";
 import {
   DEFAULT_LANGUAGES,
@@ -9,16 +9,27 @@ import {
   SEEDED_RULES,
 } from "@/lib/profile-defaults";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
-export async function requireOwner() {
-  const supabase = await createClient();
-  const allowed = ownerEmail();
-  if (!supabase || !allowed) redirect("/login?error=owner");
-  const { data } = await supabase.auth.getUser();
-  const email = data.user?.email?.toLowerCase() ?? "";
-  if (!data.user || email !== allowed) redirect("/login");
-  return { supabase, user: data.user, email };
+export const requireOwner = cache(async () => {
+  const supabase = createAdminClient();
+  const email = ownerEmail();
+  if (!email) throw new Error("OWNER_EMAIL is not set.");
+  const userId = await ownerUserId(email);
+  await ensureOwner(userId, email);
+  return { supabase, user: { id: userId, email }, email };
+});
+
+async function ownerUserId(email: string) {
+  const admin = createAdminClient();
+  const listed = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  if (listed.error) throw new Error(listed.error.message);
+  const existing = listed.data.users.find((user) => user.email?.toLowerCase() === email);
+  if (existing) return existing.id;
+  const created = await admin.auth.admin.createUser({ email, email_confirm: true });
+  if (created.error || !created.data.user) {
+    throw new Error(created.error?.message ?? "The owner record could not be created.");
+  }
+  return created.data.user.id;
 }
 
 export async function ensureOwner(userId: string, email: string) {
