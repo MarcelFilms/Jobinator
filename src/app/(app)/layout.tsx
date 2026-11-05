@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 const LINKS = [
   ["/", "Overview"],
   ["/jobs", "Jobs"],
+  ["/queue", "Queue"],
+  ["/cvs", "CVs"],
   ["/profile", "Profile"],
   ["/usage", "Usage"],
   ["/settings", "Settings"],
