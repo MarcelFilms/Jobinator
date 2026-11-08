@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createTemplateApplication, ruleFromRow } from "@/lib/applications/draft";
 import { personalizedDraftDecision } from "@/lib/applications/personalize";
 import { validateApplication } from "@/lib/applications/validate";
-import { generateTailoredCv } from "@/lib/cv/generate";
+import { generateTailoredCv, tailoredTableProblem } from "@/lib/cv/generate";
 import { londonDay } from "@/lib/london";
 import { requireOwner } from "@/lib/owner";
 import type { ProfileFact, WritingRuleSeed } from "@/lib/profile-defaults";
@@ -63,6 +63,8 @@ export async function regenerateTailoredCv(formData: FormData) {
 export async function tailorShortlist() {
   const { user } = await requireOwner();
   const admin = createAdminClient();
+  const problem = await tailoredTableProblem(admin);
+  if (problem) queueError(problem);
   const { data: jobs, error } = await admin
     .from("jobs")
     .select("id")

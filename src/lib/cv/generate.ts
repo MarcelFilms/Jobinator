@@ -27,7 +27,18 @@ async function spendSince(admin: SupabaseClient, fromDay: string): Promise<numbe
   return (data ?? []).reduce((sum, row) => sum + Number(row.spend_gbp ?? 0), 0);
 }
 
+export const MIGRATION_NEEDED = "Run supabase/migrations/0005_tailored_cvs.sql in the Supabase SQL editor first.";
+
+export async function tailoredTableProblem(admin: SupabaseClient): Promise<string | null> {
+  const probe = await admin.from("tailored_cvs").select("id").limit(1);
+  if (!probe.error) return null;
+  return missingTable(probe.error.message) ? MIGRATION_NEEDED : probe.error.message;
+}
+
 export async function generateTailoredCv(admin: SupabaseClient, userId: string, applicationId: string): Promise<GenerateOutcome> {
+  const problem = await tailoredTableProblem(admin);
+  if (problem) return { ok: false, reason: problem };
+
   const application = await admin.from("applications").select("id, job_id, cv_id, status").eq("id", applicationId).maybeSingle();
   if (application.error) return { ok: false, reason: application.error.message };
   if (!application.data) return { ok: false, reason: "That application was not found." };
@@ -140,9 +151,7 @@ export async function generateTailoredCv(admin: SupabaseClient, userId: string, 
   if (stored.error) {
     return {
       ok: false,
-      reason: missingTable(stored.error.message)
-        ? "Run supabase/migrations/0005_tailored_cvs.sql in the Supabase SQL editor first."
-        : stored.error.message,
+      reason: missingTable(stored.error.message) ? MIGRATION_NEEDED : stored.error.message,
     };
   }
 
