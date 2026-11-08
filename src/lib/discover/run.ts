@@ -3,12 +3,26 @@ import { londonDay } from "@/lib/london";
 import { DEFAULT_CATEGORY_BLOCKLIST, DEFAULT_MIN_FIT, DEFAULT_SCORING_PROFILE, type ScoringProfile } from "@/lib/profile-defaults";
 import { evaluateListing, type Decision } from "@/lib/scoring/evaluate";
 import { contentHash } from "@/lib/scoring/hash";
+import { fetchAshby } from "@/lib/sources/ashby";
+import { fetchGreenhouse } from "@/lib/sources/greenhouse";
 import { fetchJobicy, fetchJobicyStatuses } from "@/lib/sources/jobicy";
+import { fetchLever } from "@/lib/sources/lever";
+import { fetchRemotive } from "@/lib/sources/remotive";
 import { SourceError, type ParsedListing } from "@/lib/sources/types";
 import { fetchWeworkremotely } from "@/lib/sources/weworkremotely";
+import { fetchWorkingNomads } from "@/lib/sources/workingnomads";
+
+export type DiscoverSource =
+  | "weworkremotely"
+  | "jobicy"
+  | "workingnomads"
+  | "remotive"
+  | "greenhouse"
+  | "lever"
+  | "ashby";
 
 export type SourceReport = {
-  source: "weworkremotely" | "jobicy";
+  source: DiscoverSource;
   ok: boolean;
   httpStatus: number | null;
   jobsFetched: number;
@@ -87,6 +101,11 @@ export async function runDiscover(supabase: SupabaseClient): Promise<DiscoverRep
   sources.push(await runSource(supabase, "weworkremotely", profile, totals, null));
   const jobicyCursor = await jobicyCursorIfFresh(supabase);
   sources.push(await runSource(supabase, "jobicy", profile, totals, jobicyCursor));
+  sources.push(await runOpen(supabase, "workingnomads", profile, totals, fetchWorkingNomads));
+  sources.push(await runOpen(supabase, "remotive", profile, totals, fetchRemotive));
+  sources.push(await runOpen(supabase, "greenhouse", profile, totals, fetchGreenhouse));
+  sources.push(await runOpen(supabase, "lever", profile, totals, fetchLever));
+  sources.push(await runOpen(supabase, "ashby", profile, totals, fetchAshby));
 
   await writeUsage(supabase, day, totals);
   return { day, spendGbp: 0, modelCalls: 0, sources };
@@ -118,6 +137,71 @@ async function lastSuccessfulJobicy(supabase: SupabaseClient): Promise<string | 
     .limit(1)
     .maybeSingle();
   return data?.finished_at ?? null;
+}
+
+async function runOpen(
+  supabase: SupabaseClient,
+  source: DiscoverSource,
+  profile: ScoringProfile,
+  totals: { seen: number; rejected: number; scored: number; unknown: number },
+  load: () => Promise<{ status: number; listings: ParsedListing[] }>,
+): Promise<SourceReport> {
+  const started = new Date().toISOString();
+  try {
+    const fetched = await load();
+    const listings = fetched.listings;
+    const outcome =
+      listings.length === 0
+        ? { inserted: 0, filtered: 0 }
+        : await storeListings(supabase, listings, profile, new Map(), totals);
+    await supabase.from("source_runs").insert({
+      source,
+      started_at: started,
+      finished_at: new Date().toISOString(),
+      ok: true,
+      http_status: fetched.status,
+      jobs_fetched: listings.length,
+      jobs_inserted: outcome.inserted,
+      jobs_filtered: outcome.filtered,
+      error: null,
+      next_cursor: null,
+    });
+    return {
+      source,
+      ok: true,
+      httpStatus: fetched.status,
+      jobsFetched: listings.length,
+      jobsInserted: outcome.inserted,
+      jobsFiltered: outcome.filtered,
+      error: null,
+      skipped: null,
+    };
+  } catch (error) {
+    const httpStatus = error instanceof SourceError ? error.httpStatus : null;
+    const message = error instanceof Error ? error.message : "Source failed";
+    await supabase.from("source_runs").insert({
+      source,
+      started_at: started,
+      finished_at: new Date().toISOString(),
+      ok: false,
+      http_status: httpStatus,
+      jobs_fetched: 0,
+      jobs_inserted: 0,
+      jobs_filtered: 0,
+      error: message.slice(0, 500),
+      next_cursor: null,
+    });
+    return {
+      source,
+      ok: false,
+      httpStatus,
+      jobsFetched: 0,
+      jobsInserted: 0,
+      jobsFiltered: 0,
+      error: message,
+      skipped: null,
+    };
+  }
 }
 
 async function runSource(

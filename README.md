@@ -5,9 +5,14 @@ Private dashboard for one owner. Milestone 1 discovers real remote customer-supp
 ## Sources
 
 1. We Work Remotely customer-support RSS: `https://weworkremotely.com/categories/remote-customer-support-jobs.rss`
-2. Jobicy: `GET https://jobicy.com/api/jobs?geo=uk&industry=supporting`
+2. Jobicy: `GET https://jobicy.com/api/jobs?geo=uk&industry=supporting` and `industry=technical-support`, at most once an hour
+3. Working Nomads: `GET https://www.workingnomads.com/api/exposed_jobs/` (support titles and customer categories only)
+4. Remotive: `GET https://remotive.com/api/remote-jobs`, keeping rows whose category is customer service or customer support, and linking back to the Remotive URL
+5. Public company boards: Greenhouse, Lever, and Ashby, for a fixed list of companies, support titles only
 
-Reed is not connected. UK eligibility is decided from the listing text, not from a board filter alone. Each row keeps the source name and the source URL.
+Reed is not connected. Indeed is not scraped. Adzuna is not connected. Himalayas is not paged. UK eligibility is decided from the listing text, not from a board filter alone. Each row keeps the source name and the source URL.
+
+Discovery is scheduled at 07:00, 13:00, and 19:00 UTC. Automatic email sending stays off until Gmail is connected, and a web form is never submitted by the app. The daily application cap defaults to 15.
 
 Jobicy is not synced again within an hour of a successful sync. A failed source keeps yesterday’s rows and records the error.
 

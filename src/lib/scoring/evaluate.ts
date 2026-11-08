@@ -1,7 +1,15 @@
 import type { ScoringProfile } from "@/lib/profile-defaults";
 import { firstMatch, quoteSpan } from "@/lib/text";
 
-export type SourceId = "weworkremotely" | "jobicy" | "reed";
+export type SourceId =
+  | "weworkremotely"
+  | "jobicy"
+  | "reed"
+  | "workingnomads"
+  | "remotive"
+  | "greenhouse"
+  | "lever"
+  | "ashby";
 export type UkEligibility = "explicit_uk" | "worldwide" | "rejected" | "unknown";
 export type RemoteSignal = "board_remote" | "explicit_remote" | "onsite" | "unknown";
 export type JobStatus = "discovered" | "filtered_out" | "shortlisted" | "expired" | "duplicate";
@@ -316,7 +324,14 @@ export function decideRemoteSignal(input: {
   if (HARD_ONSITE.test(text)) return "onsite";
   if (HYBRID.test(text) && !HOME_OPTION.test(text) && !/\bremote\b/i.test(text)) return "onsite";
   if (HOME_OPTION.test(text) || /\bremote\b/i.test(input.title)) return "explicit_remote";
-  if (input.source === "weworkremotely" || input.source === "jobicy") return "board_remote";
+  if (
+    input.source === "weworkremotely" ||
+    input.source === "jobicy" ||
+    input.source === "workingnomads" ||
+    input.source === "remotive"
+  ) {
+    return "board_remote";
+  }
   return "unknown";
 }
 

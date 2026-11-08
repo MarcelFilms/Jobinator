@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import { runAutoSend } from "@/lib/applications/auto-send-run";
 import { cronSecret } from "@/lib/env";
 import { runDiscover } from "@/lib/discover/run";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 async function handle(request: Request) {
   const secret = cronSecret();
@@ -13,9 +14,11 @@ async function handle(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const result = await runDiscover(createAdminClient());
+    const supabase = createAdminClient();
+    const result = await runDiscover(supabase);
+    const autoSend = await runAutoSend(supabase);
     const failed = result.sources.filter((source) => !source.ok);
-    return NextResponse.json(result, { status: failed.length === result.sources.length ? 502 : 200 });
+    return NextResponse.json({ ...result, autoSend }, { status: failed.length === result.sources.length ? 502 : 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Discover failed";
     return NextResponse.json({ error: message }, { status: 500 });

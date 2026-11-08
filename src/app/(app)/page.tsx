@@ -1,5 +1,5 @@
 import { runDiscoveryAction } from "@/app/(app)/actions";
-import { sourceLabel } from "@/lib/format";
+import { DISCOVERY_SOURCES, sourceLabel } from "@/lib/format";
 import { requireOwner } from "@/lib/owner";
 
 export const dynamic = "force-dynamic";
@@ -66,11 +66,12 @@ export default async function OverviewPage({
       <section className="mt-8">
         <h2 className="font-serif text-2xl">Sources</h2>
         <p className="mt-1 text-sm text-ink/65">
-          We Work Remotely customer-support RSS, then Jobicy <code>geo=uk</code> and <code>industry=supporting</code>.
-          Jobicy will not start again within an hour of a successful sync. Reed is not connected.
+          We Work Remotely, Jobicy (supporting and technical support, at most once an hour), Working Nomads, Remotive
+          customer-service rows, and public Greenhouse, Lever, and Ashby boards. Reed is not connected. Automatic email
+          sending stays off until Gmail is connected.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          {["weworkremotely", "jobicy"].map((source) => {
+          {DISCOVERY_SOURCES.map((source) => {
             const run = latest.get(source);
             return (
               <article key={source} className="rounded-2xl border border-line bg-card p-4 shadow-card">

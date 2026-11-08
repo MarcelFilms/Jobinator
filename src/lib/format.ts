@@ -2,7 +2,22 @@ export const SOURCE_LABEL: Record<string, string> = {
   weworkremotely: "We Work Remotely",
   jobicy: "Jobicy",
   reed: "Reed",
+  workingnomads: "Working Nomads",
+  remotive: "Remotive",
+  greenhouse: "Greenhouse",
+  lever: "Lever",
+  ashby: "Ashby",
 };
+
+export const DISCOVERY_SOURCES = [
+  "weworkremotely",
+  "jobicy",
+  "workingnomads",
+  "remotive",
+  "greenhouse",
+  "lever",
+  "ashby",
+] as const;
 
 export function sourceLabel(source: string): string {
   return SOURCE_LABEL[source] ?? source;

@@ -1,16 +1,30 @@
 import { htmlToText } from "@/lib/text";
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-const BLOCKED_HOSTS = ["weworkremotely.com", "jobicy.com", "example.com", "email.com", "domain.com"];
+const BLOCKED_HOSTS = [
+  "weworkremotely.com",
+  "jobicy.com",
+  "remotive.com",
+  "workingnomads.com",
+  "greenhouse.io",
+  "lever.co",
+  "ashbyhq.com",
+  "example.com",
+  "email.com",
+  "domain.com",
+];
+const NON_APPLY_LOCAL =
+  /(privacy|accommodation|accessibility|gdpr|\bdpo\b|legal|compliance|noreply|no-reply|donotreply)/i;
 
 export function extractApplicationEmail(htmlOrText: string): string | null {
   const text = htmlToText(htmlOrText);
   const matches = text.match(EMAIL) ?? [];
   for (const candidate of matches) {
     const email = candidate.toLowerCase();
-    const host = email.split("@")[1] ?? "";
+    const [local, host = ""] = email.split("@");
     if (BLOCKED_HOSTS.some((blocked) => host === blocked || host.endsWith(`.${blocked}`))) continue;
     if (host.endsWith(".png") || host.endsWith(".jpg") || host.endsWith(".gif")) continue;
+    if (NON_APPLY_LOCAL.test(local)) continue;
     return email;
   }
   return null;
