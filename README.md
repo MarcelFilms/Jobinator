@@ -9,8 +9,10 @@ Private dashboard for one owner. Milestone 1 discovers real remote customer-supp
 3. Working Nomads: `GET https://www.workingnomads.com/api/exposed_jobs/` (support titles and customer categories only)
 4. Remotive: `GET https://remotive.com/api/remote-jobs`, keeping rows whose category is customer service or customer support, and linking back to the Remotive URL
 5. Public company boards: Greenhouse, Lever, and Ashby, for a fixed list of companies, support titles only
+6. Reed’s public RSS, LinkedIn’s public guest job pages, Arbeitnow, and Remote OK
+7. One public search page each for Indeed UK, CV-Library, Totaljobs, Adzuna, and Glassdoor. A login wall, a CAPTCHA, or HTTP 403 stops that source. The app does not log in and does not try to get around the block.
 
-Reed is not connected. Indeed is not scraped. Adzuna is not connected. Himalayas is not paged. UK eligibility is decided from the listing text, not from a board filter alone. Each row keeps the source name and the source URL.
+UK eligibility is decided from the listing text. Reed rows are stored as United Kingdom because they come from the UK site. Each row keeps the source name and the source URL.
 
 Discovery is scheduled at 07:00, 13:00, and 19:00 UTC. Automatic email sending stays off until Gmail is connected, and a web form is never submitted by the app. The daily application cap defaults to 15.
 

@@ -3,23 +3,22 @@ import { londonDay } from "@/lib/london";
 import { DEFAULT_CATEGORY_BLOCKLIST, DEFAULT_MIN_FIT, DEFAULT_SCORING_PROFILE, type ScoringProfile } from "@/lib/profile-defaults";
 import { evaluateListing, type Decision } from "@/lib/scoring/evaluate";
 import { contentHash } from "@/lib/scoring/hash";
+import { fetchArbeitnow } from "@/lib/sources/arbeitnow";
 import { fetchAshby } from "@/lib/sources/ashby";
 import { fetchGreenhouse } from "@/lib/sources/greenhouse";
 import { fetchJobicy, fetchJobicyStatuses } from "@/lib/sources/jobicy";
 import { fetchLever } from "@/lib/sources/lever";
+import { fetchLinkedIn } from "@/lib/sources/linkedin";
+import { fetchPublicBoard } from "@/lib/sources/public-boards";
+import { fetchReed } from "@/lib/sources/reed";
+import { fetchRemoteOk } from "@/lib/sources/remoteok";
 import { fetchRemotive } from "@/lib/sources/remotive";
-import { SourceError, type ParsedListing } from "@/lib/sources/types";
+import { SourceError, type ParsedListing, type SourceId } from "@/lib/sources/types";
 import { fetchWeworkremotely } from "@/lib/sources/weworkremotely";
 import { fetchWorkingNomads } from "@/lib/sources/workingnomads";
+import { thresholdForDailyTarget } from "@/lib/scoring/threshold";
 
-export type DiscoverSource =
-  | "weworkremotely"
-  | "jobicy"
-  | "workingnomads"
-  | "remotive"
-  | "greenhouse"
-  | "lever"
-  | "ashby";
+export type DiscoverSource = Exclude<SourceId, never>;
 
 export type SourceReport = {
   source: DiscoverSource;
@@ -37,6 +36,7 @@ export type DiscoverReport = {
   spendGbp: number;
   modelCalls: number;
   sources: SourceReport[];
+  dailyFit: { threshold: number; passing: number; considered: number } | null;
 };
 
 type ExistingJob = {
@@ -106,9 +106,19 @@ export async function runDiscover(supabase: SupabaseClient): Promise<DiscoverRep
   sources.push(await runOpen(supabase, "greenhouse", profile, totals, fetchGreenhouse));
   sources.push(await runOpen(supabase, "lever", profile, totals, fetchLever));
   sources.push(await runOpen(supabase, "ashby", profile, totals, fetchAshby));
+  sources.push(await runOpen(supabase, "reed", profile, totals, fetchReed));
+  sources.push(await runOpen(supabase, "linkedin", profile, totals, fetchLinkedIn));
+  sources.push(await runOpen(supabase, "indeed", profile, totals, fetchPublicBoard("indeed")));
+  sources.push(await runOpen(supabase, "cvlibrary", profile, totals, fetchPublicBoard("cvlibrary")));
+  sources.push(await runOpen(supabase, "totaljobs", profile, totals, fetchPublicBoard("totaljobs")));
+  sources.push(await runOpen(supabase, "adzuna", profile, totals, fetchPublicBoard("adzuna")));
+  sources.push(await runOpen(supabase, "glassdoor", profile, totals, fetchPublicBoard("glassdoor")));
+  sources.push(await runOpen(supabase, "arbeitnow", profile, totals, fetchArbeitnow));
+  sources.push(await runOpen(supabase, "remoteok", profile, totals, fetchRemoteOk));
 
+  const dailyFit = await tuneDailyThreshold(supabase);
   await writeUsage(supabase, day, totals);
-  return { day, spendGbp: 0, modelCalls: 0, sources };
+  return { day, spendGbp: 0, modelCalls: 0, sources, dailyFit };
 }
 
 async function jobicyCursorIfFresh(supabase: SupabaseClient): Promise<string | null> {
@@ -124,6 +134,45 @@ async function jobicyCursorIfFresh(supabase: SupabaseClient): Promise<string | n
     .limit(1)
     .maybeSingle();
   return data?.next_cursor ?? null;
+}
+
+async function tuneDailyThreshold(
+  supabase: SupabaseClient,
+): Promise<{ threshold: number; passing: number; considered: number } | null> {
+  const since = new Date(Date.now() - DAY_MS).toISOString();
+  const { data: settings } = await supabase.from("settings").select("daily_application_limit").limit(1).maybeSingle();
+  const high = typeof settings?.daily_application_limit === "number" ? settings.daily_application_limit : 15;
+  const { data: jobs, error } = await supabase
+    .from("jobs")
+    .select("id, status")
+    .gte("first_seen_at", since)
+    .in("status", ["discovered", "shortlisted"]);
+  if (error) throw new Error(error.message);
+  const ids = (jobs ?? []).map((job) => job.id as string);
+  if (ids.length === 0) return null;
+  const { data: scores, error: scoreError } = await supabase
+    .from("job_scores")
+    .select("job_id, fit_score, fit_status")
+    .in("job_id", ids);
+  if (scoreError) throw new Error(scoreError.message);
+  const ranked = (scores ?? [])
+    .filter((row) => row.fit_status === "scored" && typeof row.fit_score === "number")
+    .sort((a, b) => Number(b.fit_score) - Number(a.fit_score));
+  const tuned = thresholdForDailyTarget(ranked.map((row) => Number(row.fit_score)), high);
+  if (!tuned) return null;
+  await supabase.from("settings").update({ min_fit_score: tuned.threshold }).not("min_fit_score", "is", null);
+  const passing = new Set(
+    ranked.filter((row) => Number(row.fit_score) >= tuned.threshold).map((row) => row.job_id as string),
+  );
+  const promote = (jobs ?? []).filter((job) => passing.has(job.id as string) && job.status !== "shortlisted").map((job) => job.id as string);
+  const demote = (jobs ?? []).filter((job) => !passing.has(job.id as string) && job.status === "shortlisted").map((job) => job.id as string);
+  if (promote.length > 0) {
+    await supabase.from("jobs").update({ status: "shortlisted", filter_reason: null }).in("id", promote);
+  }
+  if (demote.length > 0) {
+    await supabase.from("jobs").update({ status: "discovered" }).in("id", demote);
+  }
+  return { threshold: tuned.threshold, passing: passing.size, considered: ranked.length };
 }
 
 async function lastSuccessfulJobicy(supabase: SupabaseClient): Promise<string | null> {
