@@ -26,11 +26,11 @@ export async function saveProfile(formData: FormData) {
   }
   const yearsText = String(formData.get("years_customer_facing") ?? "").trim();
   const years = yearsText === "" ? null : Number(yearsText);
-  const { error } = await supabase
-    .from("candidate_profiles")
-    .update({
+  const phone = String(formData.get("phone") ?? "").trim();
+  const payload = {
       display_name: String(formData.get("display_name") ?? "").trim(),
       contact_email: String(formData.get("contact_email") ?? "").trim(),
+      phone,
       years_customer_facing: years !== null && Number.isFinite(years) ? years : null,
       languages: String(formData.get("languages") ?? "")
         .split(",")
@@ -42,8 +42,13 @@ export async function saveProfile(formData: FormData) {
         .filter(Boolean),
       facts,
       updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", user.id);
+  };
+  let { error } = await supabase.from("candidate_profiles").update(payload).eq("user_id", user.id);
+  if (error && /phone/i.test(error.message)) {
+    const { phone: _phone, ...withoutPhone } = payload;
+    void _phone;
+    error = (await supabase.from("candidate_profiles").update(withoutPhone).eq("user_id", user.id)).error;
+  }
   if (error) redirect(`/profile?error=${encodeURIComponent(error.message)}`);
 
   const ruleKeys = formData.getAll("rule_key").map(String);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { runAutoApply } from "@/lib/applications/auto-apply-run";
 import { runAutoSend } from "@/lib/applications/auto-send-run";
 import { cronSecret } from "@/lib/env";
 import { runDiscover } from "@/lib/discover/run";
@@ -17,8 +18,9 @@ async function handle(request: Request) {
     const supabase = createAdminClient();
     const result = await runDiscover(supabase);
     const autoSend = await runAutoSend(supabase);
+    const autoApply = await runAutoApply(supabase);
     const failed = result.sources.filter((source) => !source.ok);
-    return NextResponse.json({ ...result, autoSend }, { status: failed.length === result.sources.length ? 502 : 200 });
+    return NextResponse.json({ ...result, autoSend, autoApply }, { status: failed.length === result.sources.length ? 502 : 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Discover failed";
     return NextResponse.json({ error: message }, { status: 500 });

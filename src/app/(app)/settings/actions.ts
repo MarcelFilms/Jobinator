@@ -42,6 +42,7 @@ export async function saveSettings(formData: FormData) {
       category_blocklist: lines(formData.get("category_blocklist")),
       daily_application_limit: numberOrNull(formData.get("daily_application_limit")) ?? DEFAULT_DAILY_APPLICATION_LIMIT,
       require_approval: formData.get("require_approval") === "on",
+      auto_send_enabled: formData.get("auto_send_enabled") === "on",
       ai_enabled: requested,
       daily_spend_cap_gbp: daily,
       monthly_spend_cap_gbp: monthly,

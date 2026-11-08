@@ -24,13 +24,21 @@ export default async function JobDetailPage({
   const { supabase } = await requireOwner();
   const { data: job } = await supabase.from("jobs").select("*").eq("id", id).maybeSingle();
   if (!job) notFound();
-  const [{ data: score }, { data: settings }, { data: application }, { data: siblings }, { data: profile }] = await Promise.all([
+  const [{ data: score }, { data: settings }, { data: application }, { data: siblings }, { data: profile }, submissionResult] = await Promise.all([
     supabase.from("job_scores").select("*").eq("job_id", id).maybeSingle(),
     supabase.from("settings").select("min_fit_score, fit_bands").limit(1).maybeSingle(),
     supabase.from("applications").select("status").eq("job_id", id).maybeSingle(),
     supabase.from("jobs").select("id, source, canonical_url, duplicate_of").or(`duplicate_of.eq.${id}${job.duplicate_of ? `,id.eq.${job.duplicate_of}` : ""}`),
     supabase.from("candidate_profiles").select("facts").limit(1).maybeSingle(),
+    supabase
+      .from("application_submissions")
+      .select("outcome, reason, created_at")
+      .eq("job_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+  const submission = submissionResult.error ? null : submissionResult.data;
   const bands = { ...DEFAULT_FIT_BANDS, ...(settings?.fit_bands ?? {}) };
   const minFit = settings?.min_fit_score ?? bands.stretch;
   const fitReasons = (score?.fit_reasons ?? []) as Reason[];
@@ -86,6 +94,11 @@ export default async function JobDetailPage({
           {job.description_text || "The source did not include a description."}
         </div>
         <FormPack title={job.title} company={job.company_name ?? ""} facts={(profile?.facts ?? []) as ProfileFact[]} />
+        {submission ? (
+          <p className="mt-4 rounded-xl border border-line bg-card px-4 py-3 text-sm">
+            Latest form attempt: {submission.outcome}. {submission.reason}
+          </p>
+        ) : null}
         <ApplicationPanel
           jobId={job.id}
           title={job.title}
