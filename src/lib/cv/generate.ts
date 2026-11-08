@@ -141,7 +141,7 @@ export async function generateTailoredCv(admin: SupabaseClient, userId: string, 
     return {
       ok: false,
       reason: missingTable(stored.error.message)
-        ? "Run supabase/migrations/0004_tailored_cvs.sql in the Supabase SQL editor first."
+        ? "Run supabase/migrations/0005_tailored_cvs.sql in the Supabase SQL editor first."
         : stored.error.message,
     };
   }

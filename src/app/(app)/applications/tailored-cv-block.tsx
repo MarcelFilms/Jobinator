@@ -19,7 +19,7 @@ export async function TailoredCvBlock({ applicationId, locked, back }: { applica
         <p className="font-semibold">Tailored CV</p>
         <p className="mt-1 text-ink/70">
           {missingTable(error.message)
-            ? "Not available until supabase/migrations/0004_tailored_cvs.sql is run in the Supabase SQL editor."
+            ? "Not available until supabase/migrations/0005_tailored_cvs.sql is run in the Supabase SQL editor."
             : error.message}
         </p>
       </div>
