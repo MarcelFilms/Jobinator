@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { draftTemplate, requestPersonalizedDraft } from "@/app/(app)/applications/actions";
+import { TailoredCvBlock } from "@/app/(app)/applications/tailored-cv-block";
 import { CV_LABEL_TITLE, cvLabelForJob } from "@/lib/applications/cv-label";
 import { PERSONALIZED_DISABLED_REASON } from "@/lib/applications/personalize";
 import { statusLabel } from "@/lib/format";
 import { requireOwner } from "@/lib/owner";
+
+const LOCKED = new Set(["sent", "replied", "interview", "rejected_by_employer", "offer"]);
 
 export async function ApplicationPanel({
   jobId,
@@ -51,6 +54,7 @@ export async function ApplicationPanel({
           </p>
           <p className="mt-2 text-sm font-semibold">{application.subject}</p>
           <div className="mt-2 whitespace-pre-wrap rounded-xl bg-paper p-3 text-sm leading-relaxed">{application.body}</div>
+          <TailoredCvBlock applicationId={application.id} locked={LOCKED.has(application.status)} back="job" />
           <p className="mt-3 text-sm">
             <Link href={`/queue#${application.id}`} className="font-semibold text-mossdeep">
               Open in the queue
@@ -63,7 +67,7 @@ export async function ApplicationPanel({
         <form action={draftTemplate} className="mt-4">
           <input type="hidden" name="job_id" value={jobId} />
           <button type="submit" className="rounded-xl bg-moss px-3 py-2 text-sm font-semibold text-white">
-            Draft a standard application
+            Draft a standard application and a tailored CV
           </button>
         </form>
       ) : null}

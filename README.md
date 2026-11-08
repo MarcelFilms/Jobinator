@@ -46,3 +46,11 @@ The dashboard opens without a sign-in. Server writes use the service role for th
 `POST /api/cron/discover` with `Authorization: Bearer $CRON_SECRET`. The same handler accepts GET so a host cron that cannot POST still works. The overview has a Run discovery button.
 
 Today’s usage row is in Europe/London. With the model off, spend is £0.00.
+
+## Tailored CVs
+
+Each application gets its own PDF CV, built from the approved base CV for the job's category and the profile facts. The tailor picks, reorders, and rewords the owner's own bullets, skills, and summary to match the job's keywords. Rewording is limited to fixed verb swaps (for example "helped" to "supported") and a few manner words such as "promptly".
+
+The validator checks every tailored CV before it is stored. Bullets and summary lines must match one of the owner's own sentences once those swaps are allowed for. Job headers, dates, education lines, skills, and contact details must match the base CV exactly. Lines that break a writing rule are removed: town, county, LinkedIn, Telegram, user counts, AI tools, overemployment, an unnamed software business, or a qualification the profile lists as absent. A CV that loses a line is stored as needs review, and automatic sending will not use it.
+
+Use **Tailor CVs for shortlisted jobs** on the Queue page, or draft one job at a time. Run `supabase/migrations/0004_tailored_cvs.sql` once first. The default path is rules-based and costs £0. Optional model rewording runs only when AI is on, both spending caps are above 0, a model, provider, and price are set, and `AI_API_KEY` exists on the server. Its output passes through the same validator line by line.

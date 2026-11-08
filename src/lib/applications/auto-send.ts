@@ -7,6 +7,7 @@ export type AutoSendInput = {
   fitScore: number | null;
   minFitScore: number;
   validationPassed: boolean;
+  tailoredCvPassed: boolean;
   duplicate: boolean;
   applicationEmail: string | null;
   sentToday: number;
@@ -29,6 +30,7 @@ export function decideAutoSend(input: AutoSendInput): AutoSendDecision {
     return { send: false, reason: "The fit score is below the minimum." };
   }
   if (!input.validationPassed) return { send: false, reason: "The validator has not passed." };
+  if (!input.tailoredCvPassed) return { send: false, reason: "The tailored CV has not passed the validator." };
   const email = input.applicationEmail ? extractApplicationEmail(input.applicationEmail) : null;
   if (!email) return { send: false, reason: "This job uses a web form." };
   if (input.dailyCap <= 0 || input.sentToday >= input.dailyCap) {

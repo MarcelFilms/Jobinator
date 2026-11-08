@@ -24,6 +24,7 @@ export async function runAutoSend(supabase: SupabaseClient): Promise<AutoSendRun
     fitScore: null,
     minFitScore: typeof settings?.min_fit_score === "number" ? settings.min_fit_score : 55,
     validationPassed: false,
+    tailoredCvPassed: false,
     duplicate: false,
     applicationEmail: null,
     sentToday: 0,

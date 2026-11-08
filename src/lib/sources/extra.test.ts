@@ -146,6 +146,7 @@ const ready = {
   fitScore: 70,
   minFitScore: 55,
   validationPassed: true,
+  tailoredCvPassed: true,
   duplicate: false,
   applicationEmail: "jobs@northwind.example",
   sentToday: 0,
@@ -169,6 +170,7 @@ describe("automatic sending gates", () => {
     expect(reason({ ...ready, applicationEmail: null })).toMatch(/web form/);
     expect(reason({ ...ready, applicationEmail: "privacy@jumio.com" })).toMatch(/web form/);
     expect(reason({ ...ready, validationPassed: false })).toMatch(/validator/);
+    expect(reason({ ...ready, tailoredCvPassed: false })).toMatch(/tailored CV/);
     expect(reason({ ...ready, fitScore: 40 })).toMatch(/fit score/);
     expect(reason({ ...ready, duplicate: true })).toMatch(/duplicate/);
     expect(reason({ ...ready, sentToday: 15 })).toMatch(/cap/);
