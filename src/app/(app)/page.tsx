@@ -66,9 +66,8 @@ export default async function OverviewPage({
       <section className="mt-8">
         <h2 className="font-serif text-2xl">Sources</h2>
         <p className="mt-1 text-sm text-ink/65">
-          We Work Remotely, Jobicy (supporting and technical support, at most once an hour), Working Nomads, Remotive
-          customer-service rows, and public Greenhouse, Lever, and Ashby boards. Reed is not connected. Automatic email
-          sending stays off until Gmail is connected.
+          Public feeds and UK board pages. A board that answers with a login wall or a CAPTCHA is skipped. Automatic
+          email sending stays off until Gmail is connected. Web forms are not submitted.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {DISCOVERY_SOURCES.map((source) => {

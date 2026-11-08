@@ -3,7 +3,7 @@ import { extractApplicationEmail, extractSalaryPhrase, parseDate } from "@/lib/s
 import type { ParsedListing, SourceId } from "@/lib/sources/types";
 
 const SUPPORT_TITLE =
-  /\b(customer support|customer service|customer success|customer care|help ?desk|service desk|technical support|product support|support specialist|support engineer|support agent|client support|member support|customer experience)\b/i;
+  /\b(customer support|customer service|customer success|customer care|help ?desk|service desk|technical support|product support|support specialist|support engineer|support agent|client support|member support|customer experience|chat support|live chat|community moderator|content moderator|trust and safety|customer onboarding|client onboarding|onboarding specialist|onboarding associate)\b/i;
 
 const SUPPORT_CATEGORY = /\b(customer support|customer service|customer success|customer care|help ?desk)\b/i;
 

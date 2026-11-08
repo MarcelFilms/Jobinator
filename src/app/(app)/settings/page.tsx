@@ -35,7 +35,7 @@ export default async function SettingsPage({
           <textarea name="category_blocklist" rows={8} defaultValue={blocklist.join("\n")} className="field" />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Minimum fit score">
+          <Field label="Minimum fit score" hint="Discovery aims for 10–15 new suitable jobs a day and will not set this below 28.">
             <input name="min_fit_score" type="number" min={0} max={100} defaultValue={settings?.min_fit_score ?? 55} className="field" />
           </Field>
           <Field label="Salary preference, GBP" hint="A blank salary on a job stays “Not advertised” and is not rejected.">

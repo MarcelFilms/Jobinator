@@ -7,6 +7,14 @@ export const SOURCE_LABEL: Record<string, string> = {
   greenhouse: "Greenhouse",
   lever: "Lever",
   ashby: "Ashby",
+  indeed: "Indeed UK",
+  cvlibrary: "CV-Library",
+  totaljobs: "Totaljobs",
+  linkedin: "LinkedIn",
+  adzuna: "Adzuna",
+  glassdoor: "Glassdoor",
+  arbeitnow: "Arbeitnow",
+  remoteok: "Remote OK",
 };
 
 export const DISCOVERY_SOURCES = [
@@ -17,6 +25,15 @@ export const DISCOVERY_SOURCES = [
   "greenhouse",
   "lever",
   "ashby",
+  "indeed",
+  "reed",
+  "cvlibrary",
+  "totaljobs",
+  "linkedin",
+  "adzuna",
+  "glassdoor",
+  "arbeitnow",
+  "remoteok",
 ] as const;
 
 export function sourceLabel(source: string): string {

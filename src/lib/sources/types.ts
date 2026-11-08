@@ -6,7 +6,15 @@ export type SourceId =
   | "remotive"
   | "greenhouse"
   | "lever"
-  | "ashby";
+  | "ashby"
+  | "indeed"
+  | "cvlibrary"
+  | "totaljobs"
+  | "linkedin"
+  | "adzuna"
+  | "glassdoor"
+  | "arbeitnow"
+  | "remoteok";
 
 export type ParsedListing = {
   source: SourceId;
@@ -47,9 +55,12 @@ export class SourceError extends Error {
 
 export const USER_AGENT = "Jobinator/0.1 (private job search; +https://github.com/MarcelFilms/Jobinator)";
 
-export async function fetchSource(url: string): Promise<{ status: number; body: string; retryAfter: string | null }> {
+export async function fetchSource(
+  url: string,
+  timeoutMs = 25_000,
+): Promise<{ status: number; body: string; retryAfter: string | null }> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25_000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       headers: {

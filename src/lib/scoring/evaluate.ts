@@ -9,7 +9,15 @@ export type SourceId =
   | "remotive"
   | "greenhouse"
   | "lever"
-  | "ashby";
+  | "ashby"
+  | "indeed"
+  | "cvlibrary"
+  | "totaljobs"
+  | "linkedin"
+  | "adzuna"
+  | "glassdoor"
+  | "arbeitnow"
+  | "remoteok";
 export type UkEligibility = "explicit_uk" | "worldwide" | "rejected" | "unknown";
 export type RemoteSignal = "board_remote" | "explicit_remote" | "onsite" | "unknown";
 export type JobStatus = "discovered" | "filtered_out" | "shortlisted" | "expired" | "duplicate";
@@ -165,7 +173,7 @@ const LANGUAGES = [
 ];
 
 const SUPPORT_TITLE =
-  /\b(customer support|customer service|customer care|help ?desk|service desk|product support|technical support|customer success)\b/i;
+  /\b(customer support|customer service|customer care|help ?desk|service desk|product support|technical support|customer success|chat support|live chat|community moderator|content moderator|trust and safety|customer onboarding|client onboarding|onboarding specialist|onboarding associate)\b/i;
 
 const EMAIL_DUTY =
   /\b(via emails?|by emails?|over emails?|through emails?|email support|e-mails?|respond(?:ing)? to emails|answer(?:ing)? emails|customer emails|email enquiries|email inquiries|email tickets|support emails|emails?\s*(?:,|&|and)\s*(?:chat|phone|tickets?))\b/i;
@@ -328,7 +336,8 @@ export function decideRemoteSignal(input: {
     input.source === "weworkremotely" ||
     input.source === "jobicy" ||
     input.source === "workingnomads" ||
-    input.source === "remotive"
+    input.source === "remotive" ||
+    input.source === "remoteok"
   ) {
     return "board_remote";
   }
