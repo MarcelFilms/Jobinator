@@ -65,15 +65,16 @@ export default async function SettingsPage({
           Require approval before anything is sent
         </label>
         <fieldset className="rounded-2xl border border-line bg-card p-4">
-          <legend className="px-1 font-semibold">Automatic email sending</legend>
+          <legend className="px-1 font-semibold">Automatic sending</legend>
           <p className="text-sm leading-relaxed text-ink/70">
-            Held. Gmail is not connected, so nothing is marked sent. A letter can be sent only when the fit score
-            clears the minimum, the validator has passed, the job is not a duplicate, and the day is under the cap.
-            Web-form jobs stay in the queue: open the source link and paste the letter yourself.
+            Email stays held until Gmail is connected. Greenhouse, Lever, and Ashby forms can be submitted when this
+            is on, approval is off, the letter and tailored CV both pass, and the day is under the cap. A form with
+            a CAPTCHA stays in the queue. A submission is marked sent only after the board confirms it. Reed is not
+            submitted from here.
           </p>
-          <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-ink/50">
-            <input type="checkbox" disabled checked={false} />
-            Send without asking, once Gmail is connected
+          <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
+            <input name="auto_send_enabled" type="checkbox" defaultChecked={Boolean(settings?.auto_send_enabled)} />
+            Submit Greenhouse, Lever, and Ashby forms that have no CAPTCHA
           </label>
         </fieldset>
         <fieldset className="rounded-2xl border border-line bg-card p-4">

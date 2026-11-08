@@ -36,6 +36,10 @@ export default async function ProfilePage({
           <input name="contact_email" type="email" defaultValue={profile?.contact_email ?? ""} className="mt-1 w-full rounded-xl border border-line bg-card px-3 py-2" />
         </label>
         <label className="block text-sm font-semibold">
+          Phone, if a form asks for one
+          <input name="phone" defaultValue={profile?.phone ?? ""} className="mt-1 w-full rounded-xl border border-line bg-card px-3 py-2" />
+        </label>
+        <label className="block text-sm font-semibold">
           Years of customer-facing experience
           <input
             name="years_customer_facing"
