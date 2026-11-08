@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/owner";
+import { DEFAULT_DAILY_APPLICATION_LIMIT } from "@/lib/profile-defaults";
 
 function lines(value: FormDataEntryValue | null): string[] {
   return String(value ?? "")
@@ -39,7 +40,7 @@ export async function saveSettings(formData: FormData) {
       fit_bands: bands,
       salary_min_gbp: numberOrNull(formData.get("salary_min_gbp")),
       category_blocklist: lines(formData.get("category_blocklist")),
-      daily_application_limit: numberOrNull(formData.get("daily_application_limit")) ?? 5,
+      daily_application_limit: numberOrNull(formData.get("daily_application_limit")) ?? DEFAULT_DAILY_APPLICATION_LIMIT,
       require_approval: formData.get("require_approval") === "on",
       ai_enabled: requested,
       daily_spend_cap_gbp: daily,

@@ -1,5 +1,5 @@
 import { saveSettings } from "@/app/(app)/settings/actions";
-import { DEFAULT_CATEGORY_BLOCKLIST, DEFAULT_FIT_BANDS, DEFAULT_TARGET_CATEGORIES } from "@/lib/profile-defaults";
+import { DEFAULT_CATEGORY_BLOCKLIST, DEFAULT_DAILY_APPLICATION_LIMIT, DEFAULT_FIT_BANDS, DEFAULT_TARGET_CATEGORIES } from "@/lib/profile-defaults";
 import { requireOwner } from "@/lib/owner";
 
 export const dynamic = "force-dynamic";
@@ -50,14 +50,32 @@ export default async function SettingsPage({
           <Field label="Stretch from">
             <input name="band_stretch" type="number" defaultValue={bands.stretch} className="field" />
           </Field>
-          <Field label="Daily application limit" hint="Stored now. Sending is a later milestone.">
-            <input name="daily_application_limit" type="number" min={0} defaultValue={settings?.daily_application_limit ?? 5} className="field" />
+          <Field label="Daily application limit" hint="Caps how many emails can be sent in a London day once Gmail is connected. The default is 15.">
+            <input
+              name="daily_application_limit"
+              type="number"
+              min={0}
+              defaultValue={settings?.daily_application_limit ?? DEFAULT_DAILY_APPLICATION_LIMIT}
+              className="field"
+            />
           </Field>
         </div>
         <label className="flex items-center gap-2 text-sm font-semibold">
           <input name="require_approval" type="checkbox" defaultChecked={settings?.require_approval ?? true} />
           Require approval before anything is sent
         </label>
+        <fieldset className="rounded-2xl border border-line bg-card p-4">
+          <legend className="px-1 font-semibold">Automatic email sending</legend>
+          <p className="text-sm leading-relaxed text-ink/70">
+            Held. Gmail is not connected, so nothing is marked sent. A letter can be sent only when the fit score
+            clears the minimum, the validator has passed, the job is not a duplicate, and the day is under the cap.
+            Web-form jobs stay in the queue: open the source link and paste the letter yourself.
+          </p>
+          <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-ink/50">
+            <input type="checkbox" disabled checked={false} />
+            Send without asking, once Gmail is connected
+          </label>
+        </fieldset>
         <fieldset className="rounded-2xl border border-line bg-card p-4">
           <legend className="px-1 font-semibold">AI</legend>
           <p className="text-sm text-ink/70">

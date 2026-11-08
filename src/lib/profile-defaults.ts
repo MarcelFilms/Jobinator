@@ -144,6 +144,7 @@ export const DEFAULT_CATEGORY_BLOCKLIST = [
 export const DEFAULT_LANGUAGES = ["English"];
 
 export const DEFAULT_MIN_FIT = 55;
+export const DEFAULT_DAILY_APPLICATION_LIMIT = 15;
 
 export const DEFAULT_FIT_BANDS = { excellent: 85, good: 70, stretch: 55 };
 

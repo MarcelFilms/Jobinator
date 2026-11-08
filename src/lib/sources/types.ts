@@ -1,4 +1,12 @@
-export type SourceId = "weworkremotely" | "jobicy" | "reed";
+export type SourceId =
+  | "weworkremotely"
+  | "jobicy"
+  | "reed"
+  | "workingnomads"
+  | "remotive"
+  | "greenhouse"
+  | "lever"
+  | "ashby";
 
 export type ParsedListing = {
   source: SourceId;

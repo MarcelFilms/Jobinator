@@ -75,18 +75,18 @@ export function parseJobicyJobs(payload: unknown): { listings: ParsedListing[]; 
   return { listings, nextCursor, hasMore: body.hasMore === true && Boolean(nextCursor) };
 }
 
-export function jobicyJobsUrl(cursor?: string | null): string {
+export function jobicyJobsUrl(cursor?: string | null, industry = "supporting"): string {
   const params = new URLSearchParams({
     geo: "uk",
-    industry: "supporting",
+    industry,
     count: "100",
   });
   if (cursor) params.set("cursor", cursor);
   return `${JOBICY_JOBS}?${params.toString()}`;
 }
 
-export async function fetchJobicy(cursor?: string | null): Promise<JobicyPage> {
-  const response = await fetchSource(jobicyJobsUrl(cursor));
+async function fetchJobicyPage(url: string): Promise<JobicyPage> {
+  const response = await fetchSource(url);
   if (response.status === 429) {
     throw new SourceError("Jobicy rate limited the jobs feed.", response.status, response.retryAfter);
   }
@@ -101,6 +101,24 @@ export async function fetchJobicy(cursor?: string | null): Promise<JobicyPage> {
   }
   const parsed = parseJobicyJobs(payload);
   return { status: response.status, ...parsed };
+}
+
+export async function fetchJobicy(cursor?: string | null): Promise<JobicyPage> {
+  const primary = await fetchJobicyPage(jobicyJobsUrl(cursor, "supporting"));
+  let technical: JobicyPage | null = null;
+  try {
+    technical = await fetchJobicyPage(jobicyJobsUrl(null, "technical-support"));
+  } catch {
+    technical = null;
+  }
+  const seen = new Set(primary.listings.map((listing) => listing.externalId));
+  const listings = [...primary.listings];
+  for (const listing of technical?.listings ?? []) {
+    if (seen.has(listing.externalId)) continue;
+    seen.add(listing.externalId);
+    listings.push(listing);
+  }
+  return { status: primary.status, listings, nextCursor: primary.nextCursor, hasMore: primary.hasMore };
 }
 
 export async function fetchJobicyStatuses(ids: string[]): Promise<Map<string, "active" | "closed" | "unknown">> {

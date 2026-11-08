@@ -259,6 +259,29 @@ describe("fit and OE", () => {
   });
 });
 
+describe("new remote boards", () => {
+  it("treats Working Nomads as a remote board and leaves an ATS board to the listing text", () => {
+    const nomad = evaluateListing({
+      source: "workingnomads",
+      title: "Customer Support",
+      descriptionText: filler("Reply to customers by email and in the ticket queue."),
+      locationText: "Anywhere in the World",
+      profile,
+    });
+    expect(nomad.remoteSignal).toBe("board_remote");
+    const board = evaluateListing({
+      source: "greenhouse",
+      title: "Customer Support",
+      descriptionText: filler("Reply to customers by email and in the ticket queue."),
+      locationText: "Remote, United Kingdom",
+      profile,
+    });
+    expect(board.remoteSignal).toBe("unknown");
+    expect(board.ukEligibility).toBe("explicit_uk");
+    expect(board.status).not.toBe("filtered_out");
+  });
+});
+
 describe("content hash", () => {
   it("ignores salary, source, and insignificant whitespace", () => {
     const left = contentHash("Acme", "Customer Support", "<p>Email   support</p>");

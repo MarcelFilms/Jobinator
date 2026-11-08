@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { eligibilityLabel, formatSalary, remoteLabel, sourceLabel, statusLabel } from "@/lib/format";
+import { DISCOVERY_SOURCES, eligibilityLabel, formatSalary, remoteLabel, sourceLabel, statusLabel } from "@/lib/format";
 import { requireOwner } from "@/lib/owner";
 
 export const dynamic = "force-dynamic";
@@ -62,8 +62,11 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
         </select>
         <select name="source" defaultValue={source} className="rounded-xl border border-line bg-card px-3 py-2">
           <option value="all">All sources</option>
-          <option value="weworkremotely">We Work Remotely</option>
-          <option value="jobicy">Jobicy</option>
+          {DISCOVERY_SOURCES.map((item) => (
+            <option key={item} value={item}>
+              {sourceLabel(item)}
+            </option>
+          ))}
         </select>
         <button type="submit" className="rounded-xl bg-ink px-4 py-2 font-semibold text-paper">
           Search
