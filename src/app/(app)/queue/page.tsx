@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { decideApplication, saveApplication } from "@/app/(app)/applications/actions";
+import { decideApplication, saveApplication, tailorShortlist } from "@/app/(app)/applications/actions";
+import { TailoredCvBlock } from "@/app/(app)/applications/tailored-cv-block";
 import { CV_LABEL_TITLE, type CvLabel } from "@/lib/applications/cv-label";
 import { PERSONALIZED_DISABLED_REASON } from "@/lib/applications/personalize";
 import { statusLabel } from "@/lib/format";
@@ -45,6 +46,15 @@ export default async function QueuePage({
       <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink/70">
         Preview, edit, approve, or reject a letter. Nothing on this page sends an email or marks an application as sent.
       </p>
+      <form action={tailorShortlist} className="mt-4 rounded-2xl border border-line bg-card px-4 py-3">
+        <button type="submit" className="rounded-xl bg-moss px-3 py-2 text-sm font-semibold text-white">
+          Tailor CVs for shortlisted jobs
+        </button>
+        <p className="mt-2 text-sm text-ink/70">
+          Drafts a standard letter where one is missing, then builds a CV for each shortlisted job from your approved base CV and
+          profile facts. Every CV goes through the validator. Rules-based, £0.
+        </p>
+      </form>
       <div className="mt-4 rounded-2xl border border-line bg-card px-4 py-3">
         <button type="button" disabled className="cursor-not-allowed rounded-xl border border-line px-3 py-2 text-sm text-ink/50">
           Personalized draft
@@ -95,8 +105,9 @@ export default async function QueuePage({
               <h3 className="mt-4 text-sm font-semibold">Preview</h3>
               <p className="mt-1 text-sm font-semibold">{row.subject}</p>
               <div className="mt-2 whitespace-pre-wrap rounded-xl bg-paper p-3 text-sm leading-relaxed">{row.body}</div>
+              <TailoredCvBlock applicationId={row.id} locked={locked} back="queue" />
               <details className="mt-3 text-sm">
-                <summary className="cursor-pointer font-semibold">Selected CV</summary>
+                <summary className="cursor-pointer font-semibold">Base CV</summary>
                 <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl bg-paper p-3">{cv?.plain_text || "No CV text stored."}</pre>
               </details>
               {findings.length > 0 ? (

@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { CV_LABEL_TITLE, cvLabelForJob } from "@/lib/applications/cv-label";
+import { createTemplateApplication, ruleFromRow } from "@/lib/applications/draft";
 import { personalizedDraftDecision } from "@/lib/applications/personalize";
-import { prepareTemplate } from "@/lib/applications/template";
 import { validateApplication } from "@/lib/applications/validate";
+import { generateTailoredCv, tailoredTableProblem } from "@/lib/cv/generate";
 import { londonDay } from "@/lib/london";
 import { requireOwner } from "@/lib/owner";
 import type { ProfileFact, WritingRuleSeed } from "@/lib/profile-defaults";
@@ -13,6 +13,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LOCKED = new Set(["sent", "replied", "interview", "rejected_by_employer", "offer"]);
+const SHORTLIST_BATCH = 15;
 
 function jobError(jobId: string, message: string): never {
   redirect(`/jobs/${jobId}?error=${encodeURIComponent(message)}`);
@@ -27,70 +28,71 @@ export async function draftTemplate(formData: FormData) {
   const jobId = String(formData.get("job_id") ?? "");
   if (!UUID.test(jobId)) redirect("/jobs");
   const admin = createAdminClient();
-  const { data: job, error: jobErrorMessage } = await admin.from("jobs").select("*").eq("id", jobId).maybeSingle();
-  if (jobErrorMessage) jobError(jobId, jobErrorMessage.message);
-  if (!job) redirect("/jobs");
-  if (job.duplicate_of || job.status === "duplicate") jobError(jobId, "Draft the original listing. This row is a duplicate.");
-
-  const existing = await admin.from("applications").select("id").eq("job_id", jobId).maybeSingle();
-  if (existing.error) jobError(jobId, existing.error.message);
-  if (existing.data) redirect("/queue?notice=An application already exists for this job.");
-
-  const [{ data: profile, error: profileError }, { data: rules, error: rulesError }] = await Promise.all([
-    admin.from("candidate_profiles").select("display_name, facts, qualifications_absent, years_customer_facing").eq("user_id", user.id).maybeSingle(),
-    admin.from("writing_rules").select("rule_key, instruction, severity, applies_to").eq("user_id", user.id),
-  ]);
-  if (profileError) jobError(jobId, profileError.message);
-  if (rulesError) jobError(jobId, rulesError.message);
-
-  const label = cvLabelForJob(job.title ?? "", job.description_text ?? "");
-  const cv = await admin.from("cvs").select("id, plain_text, is_approved").eq("user_id", user.id).eq("label", label).maybeSingle();
-  if (cv.error) jobError(jobId, cv.error.message);
-  if (!cv.data?.is_approved || !cv.data.plain_text.trim()) {
-    jobError(jobId, `Approve the ${CV_LABEL_TITLE[label]} CV before drafting. The CV is chosen from the job category.`);
-  }
-
-  const draft = prepareTemplate({
-    title: job.title ?? "",
-    description: job.description_text ?? "",
-    company: job.company_name ?? "",
-    displayName: profile?.display_name ?? "",
-    facts: (profile?.facts ?? []) as ProfileFact[],
-    cvText: cv.data.plain_text,
-    rules: (rules ?? []).map(ruleFromRow),
-    qualificationsAbsent: profile?.qualifications_absent ?? [],
-    yearsCustomerFacing: profile?.years_customer_facing === null || profile?.years_customer_facing === undefined ? null : Number(profile.years_customer_facing),
-  });
-
-  const inserted = await admin
-    .from("applications")
-    .insert({
-      job_id: jobId,
-      cv_id: cv.data.id,
-      kind: "template",
-      status: draft.validation.status,
-      subject: draft.subject,
-      body: draft.body,
-      owner_edited: false,
-    })
-    .select("id")
-    .single();
-  if (inserted.error || !inserted.data) jobError(jobId, inserted.error?.message ?? "The application could not be stored.");
-
-  const validation = await admin.from("validation_results").insert({
-    application_id: inserted.data.id,
-    body_hash: draft.validation.bodyHash,
-    passed: draft.validation.passed,
-    method: "deterministic",
-    findings: draft.validation.findings,
-    requires_manual_review: draft.validation.requiresManualReview,
-  });
-  if (validation.error) jobError(jobId, validation.error.message);
+  const drafted = await createTemplateApplication(admin, user.id, jobId);
+  if (!drafted.ok) jobError(jobId, drafted.reason);
+  if (!drafted.created) redirect("/queue?notice=An application already exists for this job.");
+  const tailored = await generateTailoredCv(admin, user.id, drafted.applicationId);
 
   revalidatePath("/");
   revalidatePath("/queue");
   revalidatePath(`/jobs/${jobId}`);
-  redirect(`/queue#${inserted.data.id}`);
+  const note = tailored.ok
+    ? tailored.passed
+      ? "Drafted. The tailored CV passed the check."
+      : "Drafted. The tailored CV needs review."
+    : `Drafted. The tailored CV was not made: ${tailored.reason}`;
+  redirect(`/queue?notice=${encodeURIComponent(note)}#${drafted.applicationId}`);
+}
+
+export async function regenerateTailoredCv(formData: FormData) {
+  const { user } = await requireOwner();
+  const applicationId = String(formData.get("application_id") ?? "");
+  const back = String(formData.get("back") ?? "queue") === "job" ? "job" : "queue";
+  if (!UUID.test(applicationId)) queueError("That application was not found.");
+  const admin = createAdminClient();
+  const result = await generateTailoredCv(admin, user.id, applicationId);
+  const app = await admin.from("applications").select("job_id").eq("id", applicationId).maybeSingle();
+  revalidatePath("/queue");
+  if (app.data) revalidatePath(`/jobs/${app.data.job_id}`);
+  const note = result.ok ? (result.passed ? "Tailored CV made. It passed the check." : "Tailored CV made. It needs review.") : result.reason;
+  const key = result.ok ? "notice" : "error";
+  if (back === "job" && app.data) redirect(`/jobs/${app.data.job_id}?${key}=${encodeURIComponent(note)}`);
+  redirect(`/queue?${key}=${encodeURIComponent(note)}#${applicationId}`);
+}
+
+export async function tailorShortlist() {
+  const { user } = await requireOwner();
+  const admin = createAdminClient();
+  const problem = await tailoredTableProblem(admin);
+  if (problem) queueError(problem);
+  const { data: jobs, error } = await admin
+    .from("jobs")
+    .select("id")
+    .eq("status", "shortlisted")
+    .is("duplicate_of", null)
+    .order("first_seen_at", { ascending: false })
+    .limit(SHORTLIST_BATCH);
+  if (error) queueError(error.message);
+  let passed = 0;
+  let review = 0;
+  const skipped = new Map<string, number>();
+  const skip = (reason: string) => skipped.set(reason, (skipped.get(reason) ?? 0) + 1);
+  for (const job of jobs ?? []) {
+    const drafted = await createTemplateApplication(admin, user.id, job.id as string);
+    if (!drafted.ok) {
+      skip(drafted.reason);
+      continue;
+    }
+    const result = await generateTailoredCv(admin, user.id, drafted.applicationId);
+    if (!result.ok) skip(result.reason);
+    else if (result.passed) passed += 1;
+    else review += 1;
+  }
+  revalidatePath("/");
+  revalidatePath("/queue");
+  const parts = [`Tailored ${passed + review} of ${(jobs ?? []).length} shortlisted jobs: ${passed} passed, ${review} need review.`];
+  for (const [reason, count] of skipped) parts.push(`Skipped ${count}: ${reason}`);
+  redirect(`/queue?notice=${encodeURIComponent(parts.join(" "))}`);
 }
 
 export async function saveApplication(formData: FormData) {
@@ -185,15 +187,6 @@ export async function requestPersonalizedDraft(formData: FormData) {
   }
   const target = UUID.test(jobId) ? `/jobs/${jobId}` : "/queue";
   redirect(`${target}?notice=${encodeURIComponent(decision.reason)}`);
-}
-
-function ruleFromRow(rule: { rule_key: string; instruction: string; severity: string; applies_to: string }): WritingRuleSeed {
-  return {
-    ruleKey: rule.rule_key,
-    instruction: rule.instruction,
-    severity: rule.severity === "rewrite" ? "rewrite" : "block",
-    appliesTo: rule.applies_to === "internal_only" ? "internal_only" : "employer_text",
-  };
 }
 
 async function loadDraftContext(

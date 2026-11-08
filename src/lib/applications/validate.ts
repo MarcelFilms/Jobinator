@@ -180,7 +180,7 @@ function judgeLine(line: string, input: ValidationInput, extras: Set<string>, so
   return { claim: line, verdict: "unsupported", span: null, ruleKey: "no_invented_facts" };
 }
 
-function prohibitedFinding(line: string, rules: WritingRuleSeed[]): ValidationFinding | null {
+export function prohibitedFinding(line: string, rules: WritingRuleSeed[]): ValidationFinding | null {
   for (const rule of rules) {
     if (rule.appliesTo !== "employer_text" || rule.severity !== "block") continue;
     if (rule.ruleKey === "call_it_arbonomics" || /call the software business arbonomics/i.test(rule.instruction)) {
@@ -212,7 +212,7 @@ function phrasePresent(text: string, phrase: string): boolean {
   return new RegExp(`\\b${escaped}\\b`, "i").test(text);
 }
 
-function absentQualification(line: string, absent: string[]): string | null {
+export function absentQualification(line: string, absent: string[]): string | null {
   const blob = absent.join("\n").toLowerCase();
   if (/degree|university/.test(blob) && /\b(degree|bachelor|master'?s|phd|bsc|ba hons)\b/i.test(line)) return "degree";
   if (/software-engineering|software engineering/.test(blob) && /\bsoftware[ -]engineer/i.test(line)) return "software engineering";
